@@ -7,7 +7,7 @@ int main()
 
     src >> sink;
 
-    engine.run();
+    engine.run(10, 10);
 
     return 0;
 }
