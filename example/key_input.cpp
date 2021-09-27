@@ -1,3 +1,4 @@
+import pipef
 
 int main()
 {
