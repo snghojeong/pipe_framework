@@ -8,7 +8,9 @@ int main()
 
     src | sink;
 
-    engine.run(10 /* loop count */, 10 /* duraion ms */);
+    engine.run(10 /* loop count */, 10000 /* duraion ms */);
+    
+    printf("End of program.");
 
     return 0;
 }
