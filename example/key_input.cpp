@@ -2,7 +2,7 @@ import pipef
 
 int main()
 {
-    auto engine = pipef::engine::create();
+    auto engine = make_unique<pipef::engine>(pipef::engine::create());
     auto src = engine.create<key_input_src>();
     auto sink = engine.create<print_sink>();
 
