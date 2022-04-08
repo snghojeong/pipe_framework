@@ -10,7 +10,7 @@ int main()
 
     engine.run(10 /* loop count */, 10000 /* duraion ms */);
     
-    printf("End of program. valud:%d", src.get());
+    printf("End of program. value:%d %s", src.get(), sink.get());
 
     return 0;
 }
