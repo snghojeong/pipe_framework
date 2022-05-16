@@ -1,6 +1,6 @@
 import pipef
 
-int main()
+int main(int argc, char** argv)
 {
     auto engine = make_unique<pipef::engine>(pipef::engine::create());
     auto src = engine.create<key_input_src>();
