@@ -5,10 +5,8 @@ int main(int argc, char** argv)
     auto src = engine->create<key_input_src>();
     auto filter = engine->create<character_filter>();
     auto sink = engine->create<print_sink>();
-    
-    filter->set_blist("abcd");
 
-    src | filter | sink;
+    src | filter["abcd"] | sink;
 
     engine->run(-1 /* loop count */, 10000 /* duraion ms */);
     
