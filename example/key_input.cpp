@@ -7,6 +7,7 @@ int main(int argc, char** argv)
     auto sink = engine->create<print_sink>();
 
     src | filter["abcd"] | sink[stdout];
+          filter["asdf"] | sink[stderr];
 
     engine->run(-1 /* loop count */, 10000 /* duraion ms */);
     
