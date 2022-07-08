@@ -9,7 +9,7 @@ int main(int argc, char** argv)
     src | filter["abcd"] | sink[stdout];
           filter["asdf"] | sink[stderr];
 
-    engine->run(-1 /* loop count */, 10000 /* duraion ms */);
+    engine->run(-1 /* loop count */, -1 /* duraion ms */);
     
     cout << "End of program." << src->get() << sink->get();
 
