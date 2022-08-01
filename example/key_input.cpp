@@ -8,6 +8,7 @@ int main(int argc, char** argv)
 
     src | filter["*"] | sink[stdout];
           filter["&"] | sink[stderr];
+          map([](data_uptr dat){ std::cout << dat->get() << std::endl; }) | sink[stdout];
 
     engine->run(-1 /* loop count */, -1 /* duraion ms */);
     
