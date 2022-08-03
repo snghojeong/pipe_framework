@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 
     engine->run(LOOP_INFINITE /* loop count */, LOOP_INFINITE /* duraion ms */);
     
-    cout << "End of program." << src->get() << sink->get();
+    std::cout << "End of program." << src->get() << sink->get();
 
     return 0;
 }
