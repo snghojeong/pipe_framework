@@ -10,7 +10,7 @@ int main(int argc, char** argv)
           filter["&"] | sink[stderr];
           map([](data_uptr dat){ std::cout << dat->get() << std::endl; }) | sink[stdout];
 
-    engine->run(LOOP_INFINITE /* loop count */, LOOP_INFINITE /* duraion ms */);
+    engine->run(INFINITE /* loop count */, INFINITE /* duraion ms */);
     
     std::cout << "End of program." << src->get() << sink->get();
 
