@@ -12,7 +12,9 @@ int main(int argc, char** argv)
 
     engine->run(INFINITE /* loop count */, INFINITE /* duraion ms */);
     
-    std::cout << "End of program." << src->get() << sink->get();
+    std::cout << "End of program." << std:endl;
+    std::cout << "Count of key:" << src->get() << std:endl;
+    std::cout << "Count of print:" << sink->get() << std:endl;
 
     return 0;
 }
