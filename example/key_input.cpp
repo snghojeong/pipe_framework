@@ -10,7 +10,7 @@ int main(int argc, char** argv)
           filter["&"] | sink[stderr];
           map([](data_uptr dat){ std::cout << dat->get() << std::endl; }) | sink[stdout];
 
-    engine->run(INFINITE /* loop count */, INFINITE /* duraion ms */);
+    engine->run(INFINITE /* loop count */, 10000 /* duraion ms */);
     
     std::cout << "End of program." << std:endl;
     std::cout << "Count of key:" << src->get() << std:endl;
