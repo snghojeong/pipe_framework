@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 
     src | filter["*"] | sink[stdout];
           filter["&"] | sink[stderr];
-          map([](data_uptr dat){ std::cout << dat->get() << std::endl; }) | sink[stdout];
+    src | map([](data_uptr dat){ std::cout << dat->get() << std::endl; }) | sink[stdout];
 
     engine->run(INFINITE /* loop count */, 10000 /* duraion ms */);
     
