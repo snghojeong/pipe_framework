@@ -5,10 +5,11 @@ int main(int argc, char** argv)
     auto src = engine->create<key_input_src>();
     auto filter = engine->create<character_filter>();
     auto sink = engine->create<print_sink>();
+    auto map = engine->create<func_map>();
 
     src | filter["*"] | sink[stdout];
           filter["&"] | sink[stderr];
-    src | map([](data_uptr dat){ std::cout << dat->get() << std::endl; }) | sink[stdout];
+    src | map[[](data_uptr dat){ std::cout << dat->get() << std::endl; }] | sink[stdout];
 
     engine->run(INFINITE /* loop count */, 10000 /* duraion ms */);
     
