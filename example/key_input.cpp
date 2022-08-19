@@ -10,6 +10,7 @@ int main(int argc, char** argv)
     src | filter["*"] | sink[stdout];
           filter["&"] | sink[stderr];
     src | map[[](data_uptr dat){ std::cout << dat->get() << std::endl; }] | sink[stdout];
+    src | filter["help"] | map[[](data_uptr dat){ return std::string("Help string..."); }] | sink[stdout];
 
     engine->run(INFINITE /* loop count */, 10000 /* duraion ms */);
     
