@@ -5,7 +5,7 @@ int main(int argc, char** argv)
     auto src = engine->create<key_input_src>();
     auto filter = engine->create<character_filter>();
     auto sink = engine->create<print_sink>();
-    auto map = engine->create<func_map>();
+    auto map = engine->create<lambda_map>();
 
     src | filter["*"] | sink[stdout];
           filter["&"] | sink[stderr];
