@@ -17,6 +17,7 @@ int main(int argc, char** argv)
     std::cout << "End of program." << std:endl;
     std::cout << "Count of key:" << src->get() << std:endl;
     std::cout << "Count of print:" << sink->get() << std:endl;
+    std::cout << "Filter:" << filter->get() << std:endl;
 
     return 0;
 }
