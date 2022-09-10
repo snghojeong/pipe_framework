@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     src | filter["*"] | sink[stdout];
           filter["&"] | sink[stderr];
     src | map[[](data_uptr dat){ std::cout << dat->get() << std::endl; }] | sink[stdout];
-    src | filter["help"] | map[[](data_uptr dat){ return std::string("Help string..."); }] | sink[stdout];
+    src | filter["help"] | map[[](data_uptr d){ return std::string("Help string..."); }] | sink[stdout];
     src | src_cnter;
     filter | fltr_cnter;
 
