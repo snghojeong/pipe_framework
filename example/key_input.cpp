@@ -4,6 +4,7 @@ int main(int argc, char** argv)
     auto engine = make_unique<pipef::engine>(pipef::engine::create());
     auto src = engine->create<key_input_src>();
     auto filter = engine->create<character_filter>();
+    auto help_filter = engine->create<character_filter>();
     auto sink = engine->create<print_sink>();
     auto map = engine->create<lambda_map>();
     auto src_cnter = engine->create<input_counter>();
@@ -12,7 +13,7 @@ int main(int argc, char** argv)
     src | filter["*"] | sink[stdout];
           filter["&"] | sink[stderr];
     src | map[[](data_uptr dat){ std::cout << dat->get() << std::endl; }] | sink[stdout];
-    src | filter["help"] | map[[](data_uptr d){ return std::string("Help string..."); }] | sink[stdout];
+    src | help_filter["help"] | map[[](data_uptr d){ return std::string("Help string..."); }] | sink[stdout];
     src | src_cnter;
     filter | fltr_cnter;
 
