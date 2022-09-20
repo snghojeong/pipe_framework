@@ -11,7 +11,6 @@ int main(int argc, char** argv)
     auto fltr_cnter = engine->create<input_counter>();
 
     src | filter["*"] | sink[stdout];
-          filter["&"] | sink[stderr];
     src | map[[](data_uptr dat){ std::cout << dat->get() << std::endl; }] | sink[stdout];
     src | help_filter["help"] | map[[](data_uptr d){ return std::string("Help string..."); }] | sink[stdout];
     src | src_cnter;
