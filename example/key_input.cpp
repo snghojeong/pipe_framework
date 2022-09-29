@@ -9,7 +9,7 @@ int main(int argc, char** argv)
     auto help_fltr_cnter = engine->create<input_counter>();
 
     src | sink[stdout];
-    src | help_filter["help"] | map[[](data_uptr d){ return std::string("Help string..."); }] | sink[stdout];
+    src | help_filter["help"] | map[[](data_uptr d){ return std::string("Help string... %s", d->to_string()); }] | sink[stdout];
     src | src_cnter;
     help_filter | help_fltr_cnter;
 
