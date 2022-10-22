@@ -4,6 +4,7 @@ int main(int argc, char** argv)
     auto engine = make_unique<pipef::engine>(pipef::engine::create());
     auto src = engine->create<key_input_src>();
     auto help_filter = engine->create<character_filter>();
+    auto command_mapper = engine->create<command_map>();
     auto sink = engine->create<print_sink>();
     auto src_cnter = engine->create<input_counter>();
     auto help_fltr_cnter = engine->create<input_counter>();
