@@ -12,6 +12,7 @@ int main(int argc, char** argv)
     src | sink[stdout];
     src | help_filter["help"] | map[[](data_uptr d){ return std::string("Help string... %s", d->to_string()); }] | sink[stdout];
     src | command_mapper["history"].set(hist_cmd_func);
+    src | command_mapper["quit"].set(exit);
     src | src_cnter;
     help_filter | help_fltr_cnter;
 
