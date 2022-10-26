@@ -18,7 +18,6 @@ int main(int argc, char** argv)
     
     std::cout << "End of program." << std:endl;
     std::cout << "Count of key:" << src_cnter->get() << std:endl;
-    std::cout << "Count of filter:" << fltr_cnter->get() << std:endl;
 
     return 0;
 }
