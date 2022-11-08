@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     src | command_mapper["history"].set(hist_cmd_func);
     src | command_mapper["quit"].set(exit);
 
-    engine->run(INFINITE /* loop count */, INFINITE /* duraion ms */);
+    engine->run(INFINITE /* loop count */, 10000 /* duraion ms */);
     
     std::cout << "End of program." << std:endl;
 
