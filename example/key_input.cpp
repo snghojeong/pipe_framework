@@ -1,4 +1,9 @@
 
+void exit() 
+{
+    exit(0);
+}
+
 int main(int argc, char** argv)
 {
     auto engine = make_unique<pipef::engine>(pipef::engine::create());
