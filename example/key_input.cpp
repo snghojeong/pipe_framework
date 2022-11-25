@@ -1,4 +1,8 @@
 
+void run_cli_cmd()
+{
+}
+
 void exit() 
 {
     exit(0);
@@ -16,6 +20,7 @@ int main(int argc, char** argv)
     src | help_filter["help"] | map[[](data_uptr d){ return std::string("Help string... %s", d->to_string()); }] | sink[stdout];
     src | command_mapper["history"].set(hist_cmd_func);
     src | command_mapper["quit"].set(exit);
+    src | command_mapper["run"].set(run_cli_cmd);
 
     engine->run(INFINITE /* loop count */, 10000 /* duraion ms */);
     
