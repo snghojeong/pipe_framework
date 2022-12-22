@@ -1,6 +1,7 @@
 
-void run_cli_cmd()
+void run_cli_cmd(const char *cmd)
 {
+    exec(cmd);
 }
 
 void exit() 
