@@ -1,6 +1,7 @@
 
 void run_cli_cmd(const char *cmd)
 {
+    fprintf(stdout, "Excute command: %s", cmd);
     exec(cmd);
 }
 
