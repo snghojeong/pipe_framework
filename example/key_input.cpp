@@ -5,7 +5,7 @@ void run_cli_cmd(const char *cmd)
     exec(cmd);
 }
 
-void exit() 
+void exit(void *arg) 
 {
     exit(0);
 }
