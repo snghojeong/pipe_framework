@@ -1,11 +1,11 @@
 
-void run_cli_cmd(const char *cmd)
+void run_cli_cmd(int argc, char** argv)
 {
-    fprintf(stdout, "Excute command: %s", cmd);
-    exec(cmd);
+    fprintf(stdout, "Excute command: %s\n", argv[0]);
+    exec(argv[0]);
 }
 
-void exit(void *arg) 
+void exit(int argc, char** argv) 
 {
     exit(0);
 }
