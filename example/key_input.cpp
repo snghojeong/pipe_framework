@@ -2,7 +2,6 @@
 void run_cli_cmd(int argc, char** argv)
 {
     fprintf(stdout, "Excute command: %s\n", argv[0]);
-    exec(argv[0]);
 }
 
 void exit(int argc, char** argv) 
