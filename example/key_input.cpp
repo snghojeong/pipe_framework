@@ -2,7 +2,6 @@
 #include <memory>
 #include <string>
 #include <functional>
-#include "pipef.h" // Assuming this is your library for pipef framework
 
 // Function to run CLI commands
 void run_cli_cmd(const std::string& command) {
