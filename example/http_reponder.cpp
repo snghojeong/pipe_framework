@@ -2,6 +2,8 @@
 #include <memory>
 #include <string>
 #include <fstream>
+#include <sstream>
+#include <stdexcept>
 #include "pipef.h" // Assuming this is the custom library for pipeline processing
 
 // Function to read an HTML file from disk
@@ -16,36 +18,40 @@ std::string read_html_file(const std::string& file_path) {
     return buffer.str();
 }
 
-// Pipeline step: Read HTTP request
+// Pipeline step: Process HTTP request
 std::string handle_request(const std::string& request) {
     std::cout << "Received HTTP request:\n" << request << std::endl;
-    return request; // No special handling here, but can be extended
+    return request; // Can be extended to parse or process the request further
 }
 
-// Pipeline step: Generate an HTTP response with the HTML content
+// Pipeline step: Generate an HTTP response
 std::string generate_response(const std::string& html_content) {
     std::ostringstream response;
-    response << "HTTP/1.1 200 OK\r\n";
-    response << "Content-Type: text/html\r\n";
-    response << "Content-Length: " << html_content.size() << "\r\n";
-    response << "Connection: close\r\n\r\n";
-    response << html_content;
+    response << "HTTP/1.1 200 OK\r\n"
+             << "Content-Type: text/html\r\n"
+             << "Content-Length: " << html_content.size() << "\r\n"
+             << "Connection: close\r\n\r\n"
+             << html_content;
     return response.str();
 }
 
-// Function to send the HTTP response over the socket
+// Function to send an HTTP response
 void send_response(std::shared_ptr<tcp::socket> socket, const std::string& response) {
-    boost::asio::write(*socket, boost::asio::buffer(response));
-    socket->close();
+    try {
+        boost::asio::write(*socket, boost::asio::buffer(response));
+        socket->close();
+    } catch (const std::exception& e) {
+        std::cerr << "Error sending response: " << e.what() << std::endl;
+    }
 }
 
 int main() {
     try {
-        const std::string html_file = "index.html"; // HTML file to serve
+        const std::string html_file = "index.html"; // Path to the HTML file
         const unsigned short port = 8080;          // Port to listen on
 
-        // Read the HTML content
-        std::string html_content = read_html_file(html_file);
+        // Read the HTML content from file
+        const std::string html_content = read_html_file(html_file);
 
         // Create engine and pipeline components
         auto engine = pipef::engine::create();
@@ -56,13 +62,15 @@ int main() {
         auto response_sender = engine->create<tcp_output_sink>();
 
         // Build the pipeline
-        request_source
-            | request_processor
-            | response_generator
-            | response_sender;
+        *request_source
+            | *request_processor
+            | *response_generator
+            | *response_sender;
 
         // Run the pipeline
-        engine->run(INFINITE /* loop count */, 10000 /* duration ms */);
+        constexpr int loop_count = INFINITE; // Unlimited loop count
+        constexpr int duration_ms = 10000;  // Duration in milliseconds
+        engine->run(loop_count, duration_ms);
 
         std::cout << "HTTP server is running on port " << port << "..." << std::endl;
     } catch (const std::exception& e) {
