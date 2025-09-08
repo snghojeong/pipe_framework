@@ -54,7 +54,7 @@ void send_response(const std::shared_ptr<tcp::socket>& socket, const std::string
 int main() {
     try {
         const std::filesystem::path html_file_path = "index.html";
-        const unsigned short port = 8080;
+        const unsigned short port = 8000;
 
         const std::string html_content = read_html_file(html_file_path);
         std::cout << "[INFO] Loaded HTML content from: " << html_file_path << "\n";
