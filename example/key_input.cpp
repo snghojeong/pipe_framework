@@ -59,7 +59,7 @@ void handle_history(const std::string&) {
 }
 
 std::string make_help_string(data_uptr data) {
-    return "[Help] " + data.to_string();
+    return "Help: " + data.to_string();
 }
 
 int main() {
