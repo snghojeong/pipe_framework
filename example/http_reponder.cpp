@@ -79,7 +79,7 @@ int main() {
 
         // Run indefinitely
         constexpr int loop_forever = INFINITE;
-        constexpr int interval_ms = 10000;
+        constexpr int interval_ms = 100;
         engine->run(loop_forever, interval_ms);
 
     } catch (const std::exception& e) {
