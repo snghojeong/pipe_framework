@@ -51,11 +51,11 @@ std::atomic<bool> g_should_quit = false;
 
 // Command logic
 void run_cli_cmd(const std::string& command) {
-    std::cout << "[Command] Executing: " << command << '\n';
+    std::cout << "[Command] Executing: " << command << std::endl;
 }
 
 void handle_history(const std::string&) {
-    std::cout << "[Command] Showing command history.\n";
+    std::cout << "[Command] Showing command history." << std::endl;
 }
 
 std::string make_help_string(data_uptr data) {
@@ -87,7 +87,7 @@ int main() {
             g_should_quit.store(true, std::memory_order_release);
         });
 
-        std::cout << "[System] CLI initialized. Waiting for input...\n";
+        std::cout << "[System] CLI initialized. Waiting for input..." << std::endl;
 
         // Main loop with graceful shutdown check
         while (!g_should_quit.load(std::memory_order_acquire)) {
@@ -98,9 +98,9 @@ int main() {
         return EXIT_SUCCESS;
 
     } catch (const std::exception& e) {
-        std::cerr << "[Fatal Error] " << e.what() << '\n';
+        std::cerr << "[Fatal Error] " << e.what() << std::endl;
     } catch (...) {
-        std::cerr << "[Fatal Error] Unknown exception occurred.\n";
+        std::cerr << "[Fatal Error] Unknown exception occurred." << std::endl;
     }
 
     return EXIT_FAILURE;
