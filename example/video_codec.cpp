@@ -5,14 +5,12 @@
 #include <stdexcept>
 
 // --- FFmpeg Headers ---
-extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
 #include <libswscale/swscale.h>
 #include <libavutil/error.h>
-}
 
 // --- Constants ---
 constexpr int WIDTH = 1280;
