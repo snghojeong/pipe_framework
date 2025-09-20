@@ -5,9 +5,9 @@
 #include <memory>
 #include <stdexcept>
 #include <filesystem>
+#include <boost/asio.hpp> // Needed for tcp::socket and boost::asio::write
 
 #include "pipef.h" // Presumed custom pipeline library
-#include <boost/asio.hpp> // Needed for tcp::socket and boost::asio::write
 
 using tcp = boost::asio::ip::tcp;
 
