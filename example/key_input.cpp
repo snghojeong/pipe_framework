@@ -44,7 +44,7 @@ struct data_uptr {
 
 // Constants
 constexpr int kLoopForever = -1;
-constexpr int kStepDurationMs = 1000;
+constexpr int kStepDurationMs = 100;
 
 // Global exit flag
 std::atomic<bool> g_should_quit = false;
