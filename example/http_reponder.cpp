@@ -9,6 +9,7 @@
 
 #include "pipef.h" // Presumed custom pipeline library
 
+using namespace std;
 using tcp = boost::asio::ip::tcp;
 
 // Reads the full content of an HTML file
