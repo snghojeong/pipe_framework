@@ -4,6 +4,8 @@
 #include <functional>
 #include <atomic>
 
+using namespace std;
+
 // ----------------- Assumed Framework Types -----------------
 namespace pipef {
     namespace engine {
