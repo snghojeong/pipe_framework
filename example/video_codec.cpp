@@ -3,14 +3,17 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <functional>
+#include <vector>
 
 // --- FFmpeg Headers ---
+extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
-#include <libswscale/swscale.h>
 #include <libavutil/error.h>
+}
 
 // --- Constants ---
 constexpr int WIDTH = 1920;
@@ -18,165 +21,203 @@ constexpr int HEIGHT = 1080;
 constexpr int FPS = 60;
 constexpr AVPixelFormat PIX_FMT = AV_PIX_FMT_YUV420P;
 
-// --- RAII Smart Pointers ---
-template <typename T, void (*Deleter)(T**)> 
-using FFmpegPtr = std::unique_ptr<T, std::function<void(T*)>>;
+// =================================================================================================
+// ## 1. Utilities (RAII Wrappers & Error Handling)
+//
+// We define smart pointers for FFmpeg types and a single error-checking function.
+// This ensures resources are managed automatically and errors are handled consistently.
+// =================================================================================================
 
+// --- Custom Deleters for FFmpeg types ---
+struct AVFormatContextDeleter {
+    void operator()(AVFormatContext* ctx) const {
+        if (ctx) {
+            // Close the output file if it was opened
+            if (!(ctx->oformat->flags & AVFMT_NOFILE) && ctx->pb) {
+                avio_closep(&ctx->pb);
+            }
+            avformat_free_context(ctx);
+        }
+    }
+};
+
+// --- RAII Smart Pointer Aliases ---
 using CodecCtxPtr  = std::unique_ptr<AVCodecContext, decltype(&avcodec_free_context)>;
-using FormatCtxPtr = std::unique_ptr<AVFormatContext, std::function<void(AVFormatContext*)>>;
+using FormatCtxPtr = std::unique_ptr<AVFormatContext, AVFormatContextDeleter>;
 using FramePtr     = std::unique_ptr<AVFrame, decltype(&av_frame_free)>;
 using PacketPtr    = std::unique_ptr<AVPacket, decltype(&av_packet_free)>;
 
-inline CodecCtxPtr make_codec_ctx(const AVCodec* codec) {
-    return { avcodec_alloc_context3(codec), avcodec_free_context };
-}
-inline FramePtr make_frame() {
-    return { av_frame_alloc(), av_frame_free };
-}
-inline PacketPtr make_packet() {
-    return { av_packet_alloc(), av_packet_free };
-}
-inline FormatCtxPtr make_format_ctx(AVFormatContext* raw) {
-    return { raw, [](AVFormatContext* ctx) {
-        if (ctx) {
-            if (ctx->pb) avio_closep(&ctx->pb);
-            avformat_free_context(ctx);
-        }
-    }};
-}
-
-// --- Error Handling ---
+// --- Error Handling Helper ---
 inline void check_ffmpeg(int ret, const std::string& msg) {
-    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-        char buf[AV_ERROR_MAX_STRING_SIZE];
-        av_strerror(ret, buf, sizeof(buf));
-        throw std::runtime_error(msg + ": " + buf);
+    if (ret < 0) {
+        std::vector<char> buf(AV_ERROR_MAX_STRING_SIZE);
+        av_strerror(ret, buf.data(), buf.size());
+        throw std::runtime_error(msg + ": " + buf.data());
     }
 }
 
-// --- YUV Reader ---
+// =================================================================================================
+// ## 2. YUV File Reader
+//
+// This class remains largely the same. It's a simple utility to read raw YUV frames from a file.
+// NOTE: This implementation assumes the input .yuv file has a packed, non-padded format that
+// matches the memory layout allocated by av_frame_get_buffer.
+// =================================================================================================
 class YUVReader {
 public:
     explicit YUVReader(const std::string& filename)
-        : frame_size(WIDTH * HEIGHT * 3 / 2), file(filename, std::ios::binary) {
-        if (!file) throw std::runtime_error("Failed to open: " + filename);
+        : file_(filename, std::ios::binary),
+          frame_size_(WIDTH * HEIGHT * 3 / 2) {
+        if (!file_) {
+            throw std::runtime_error("Failed to open input file: " + filename);
+        }
     }
 
-    FramePtr next() {
-        auto frame = make_frame();
-        frame->width  = WIDTH;
+    FramePtr nextFrame() {
+        auto frame = FramePtr(av_frame_alloc(), av_frame_free);
+        frame->width = WIDTH;
         frame->height = HEIGHT;
         frame->format = PIX_FMT;
-        check_ffmpeg(av_frame_get_buffer(frame.get(), 32), "Frame buffer alloc failed");
+        check_ffmpeg(av_frame_get_buffer(frame.get(), 0), "Failed to allocate frame buffer");
 
-        if (!file.read(reinterpret_cast<char*>(frame->data[0]), frame_size))
-            return nullptr;
+        std::vector<char> buffer(frame_size_);
+        file_.read(buffer.data(), frame_size_);
+        if (file_.gcount() < frame_size_) {
+            return nullptr; // End of file
+        }
 
-        frame->linesize[0] = WIDTH;
-        frame->linesize[1] = WIDTH / 2;
-        frame->linesize[2] = WIDTH / 2;
-        frame->data[1] = frame->data[0] + WIDTH * HEIGHT;
-        frame->data[2] = frame->data[1] + WIDTH * HEIGHT / 4;
+        // Copy the raw YUV data into the frame's planes
+        av_image_copy_to_buffer(
+            frame->data[0], frame->linesize[0] * HEIGHT * 3/2,
+            (const uint8_t* const*) &buffer[0], & (int&)(frame_size_),
+            PIX_FMT, WIDTH, HEIGHT, 1
+        );
+
+
+        // Manually set plane pointers for the contiguous buffer
+        // This is correct for the packed YUV420p format.
+        const int y_size = WIDTH * HEIGHT;
+        const int uv_size = WIDTH * HEIGHT / 4;
+        frame->data[1] = frame->data[0] + y_size;
+        frame->data[2] = frame->data[1] + uv_size;
+
         return frame;
     }
 
 private:
-    std::ifstream file;
-    size_t frame_size;
+    std::ifstream file_;
+    const size_t frame_size_;
 };
 
-// --- Encoder ---
-class Encoder {
+// =================================================================================================
+// ## 3. Video Encoder Class
+//
+// This new class encapsulates all FFmpeg-related state and operations.
+// The constructor handles all initialization, and the destructor handles cleanup via RAII.
+// =================================================================================================
+class VideoEncoder {
 public:
-    explicit Encoder(AVCodecContext* ctx) : ctx(ctx) {}
+    VideoEncoder(const std::string& filename, int width, int height, int fps)
+        : next_pts_(0)
+        , codec_ctx_(nullptr, avcodec_free_context)
+    {
+        // --- 1. Find Codec and Create Context ---
+        const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+        if (!codec) throw std::runtime_error("H.264 encoder not found");
+        codec_ctx_.reset(avcodec_alloc_context3(codec));
+        if (!codec_ctx_) throw std::runtime_error("Could not allocate codec context");
 
-    PacketPtr encode(FramePtr& frame) {
-        if (frame) frame->pts = pts++;
-        check_ffmpeg(avcodec_send_frame(ctx, frame ? frame.get() : nullptr),
-                     "Send frame failed");
+        // --- 2. Configure Codec Context ---
+        codec_ctx_->width = width;
+        codec_ctx_->height = height;
+        codec_ctx_->pix_fmt = PIX_FMT;
+        codec_ctx_->time_base = {1, fps};
+        codec_ctx_->framerate = {fps, 1};
+        codec_ctx_->gop_size = 12; // Optional: I-frame interval
+        av_opt_set(codec_ctx_->priv_data, "preset", "slow", 0); // Optional: Encoding speed
+        check_ffmpeg(avcodec_open2(codec_ctx_.get(), codec, nullptr), "Could not open codec");
 
-        auto pkt = make_packet();
-        int ret = avcodec_receive_packet(ctx, pkt.get());
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) return nullptr;
-        check_ffmpeg(ret, "Receive packet failed");
-        return pkt;
+        // --- 3. Create Format Context and Stream ---
+        AVFormatContext* raw_fmt_ctx = nullptr;
+        check_ffmpeg(avformat_alloc_output_context2(&raw_fmt_ctx, nullptr, nullptr, filename.c_str()), "Could not create output context");
+        format_ctx_.reset(raw_fmt_ctx);
+
+        stream_ = avformat_new_stream(format_ctx_.get(), nullptr);
+        if (!stream_) throw std::runtime_error("Could not create new stream");
+        stream_->id = format_ctx_->nb_streams - 1;
+        stream_->time_base = codec_ctx_->time_base;
+        check_ffmpeg(avcodec_parameters_from_context(stream_->codecpar, codec_ctx_.get()), "Could not copy codec parameters");
+
+        // --- 4. Open Output File and Write Header ---
+        if (!(format_ctx_->oformat->flags & AVFMT_NOFILE)) {
+            check_ffmpeg(avio_open(&format_ctx_->pb, filename.c_str(), AVIO_FLAG_WRITE), "Could not open output file");
+        }
+        check_ffmpeg(avformat_write_header(format_ctx_.get(), nullptr), "Could not write header");
+    }
+
+    void encodeFrame(AVFrame* frame) {
+        if (frame) {
+            frame->pts = next_pts_++;
+        }
+        // Send the frame to the encoder
+        int ret = avcodec_send_frame(codec_ctx_.get(), frame);
+        check_ffmpeg(ret, "Failed to send frame to encoder");
+
+        // Receive and write all available packets
+        while (ret >= 0) {
+            auto packet = PacketPtr(av_packet_alloc(), av_packet_free);
+            ret = avcodec_receive_packet(codec_ctx_.get(), packet.get());
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+                break; // Need more input or encoding is finished
+            }
+            check_ffmpeg(ret, "Failed to receive packet from encoder");
+
+            writePacket(packet.get());
+        }
+    }
+
+    void finalize() {
+        // Flush the encoder by sending a null frame
+        encodeFrame(nullptr);
+        // Write the stream trailer
+        check_ffmpeg(av_write_trailer(format_ctx_.get()), "Failed to write trailer");
+        std::cout << "Encoding completed successfully." << std::endl;
     }
 
 private:
-    AVCodecContext* ctx;
-    int64_t pts = 0;
+    void writePacket(AVPacket* packet) {
+        av_packet_rescale_ts(packet, codec_ctx_->time_base, stream_->time_base);
+        packet->stream_index = stream_->index;
+        check_ffmpeg(av_interleaved_write_frame(format_ctx_.get(), packet), "Failed to write packet");
+    }
+
+    FormatCtxPtr format_ctx_;
+    CodecCtxPtr codec_ctx_;
+    AVStream* stream_ = nullptr; // Raw pointer, owned by format_ctx_
+    int64_t next_pts_;
 };
 
-// --- Init Helpers ---
-CodecCtxPtr init_codec() {
-    const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_H264);
-    if (!codec) throw std::runtime_error("H.264 encoder not found");
-
-    auto ctx = make_codec_ctx(codec);
-    ctx->width = WIDTH;
-    ctx->height = HEIGHT;
-    ctx->time_base = {1, FPS};
-    ctx->framerate = {FPS, 1};
-    ctx->pix_fmt = PIX_FMT;
-    ctx->gop_size = 12;
-    check_ffmpeg(avcodec_open2(ctx.get(), codec, nullptr), "Codec open failed");
-    return ctx;
-}
-
-FormatCtxPtr init_output(const std::string& filename, AVCodecContext* codec, AVStream*& stream) {
-    AVFormatContext* raw = nullptr;
-    check_ffmpeg(avformat_alloc_output_context2(&raw, nullptr, nullptr, filename.c_str()),
-                 "Output ctx failed");
-    auto fmt = make_format_ctx(raw);
-
-    stream = avformat_new_stream(fmt.get(), nullptr);
-    if (!stream) throw std::runtime_error("Stream creation failed");
-    check_ffmpeg(avcodec_parameters_from_context(stream->codecpar, codec),
-                 "Copy codec params failed");
-    stream->time_base = codec->time_base;
-
-    if (!(fmt->oformat->flags & AVFMT_NOFILE)) {
-        check_ffmpeg(avio_open(&fmt->pb, filename.c_str(), AVIO_FLAG_WRITE),
-                     "File open failed");
-    }
-    check_ffmpeg(avformat_write_header(fmt.get(), nullptr), "Write header failed");
-    return fmt;
-}
-
-// --- Main ---
+// =================================================================================================
+// ## 4. Main Function
+//
+// The main function is now simple and clean. It clearly expresses the program's purpose:
+// 1. Create a reader and an encoder.
+// 2. Loop through frames, encoding each one.
+// 3. Finalize the video file.
+// =================================================================================================
 int main() {
     try {
-        auto codec_ctx = init_codec();
-        AVStream* stream = nullptr;
-        auto fmt_ctx = init_output("output.mp4", codec_ctx.get(), stream);
-
         YUVReader reader("input.yuv");
-        Encoder encoder(codec_ctx.get());
+        VideoEncoder encoder("output.mp4", WIDTH, HEIGHT, FPS);
 
-        while (auto frame = reader.next()) {
-            if (auto pkt = encoder.encode(frame)) {
-                av_packet_rescale_ts(pkt.get(), codec_ctx->time_base, stream->time_base);
-                pkt->stream_index = stream->index;
-                check_ffmpeg(av_interleaved_write_frame(fmt_ctx.get(), pkt.get()),
-                             "Write frame failed");
-            }
+        while (auto frame = reader.nextFrame()) {
+            encoder.encodeFrame(frame.get());
         }
 
-        // flush
-        for (;;) {
-            if (auto pkt = encoder.encode(nullptr)) {
-                av_packet_rescale_ts(pkt.get(), codec_ctx->time_base, stream->time_base);
-                pkt->stream_index = stream->index;
-                check_ffmpeg(av_interleaved_write_frame(fmt_ctx.get(), pkt.get()),
-                             "Flush failed");
-            } else break;
-        }
+        encoder.finalize();
 
-        check_ffmpeg(av_write_trailer(fmt_ctx.get()), "Write trailer failed");
-        std::cout << "Encoding completed." << std::endl;
-
-    } catch (const std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
     return 0;
