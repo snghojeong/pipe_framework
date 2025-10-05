@@ -1,109 +1,148 @@
+#include <atomic>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <functional>
-#include <atomic>
+#include <utility> // For std::move
 
-using namespace std;
-
-// ----------------- Assumed Framework Types -----------------
+// ----------------- Assumed Framework Types (Unchanged) -----------------
 namespace pipef {
-    namespace engine {
-        class engine {
-        public:
-            static std::unique_ptr<engine> create() { return std::make_unique<engine>(); }
+namespace engine {
+class engine {
+ public:
+  static std::unique_ptr<engine> create() { return std::make_unique<engine>(); }
 
-            template<typename T>
-            std::unique_ptr<T> create() { return std::make_unique<T>(); }
+  template <typename T>
+  std::unique_ptr<T> create() {
+    return std::make_unique<T>();
+  }
 
-            void run(int loop_count, int duration_ms) {
-                std::cout << "[Engine] Running loop for " << duration_ms << "ms...\n";
-            }
-        };
-    }
-}
+  void run(int loop_count, int duration_ms) {
+    // Simulates engine work for the given duration.
+  }
+};
+}  // namespace engine
+}  // namespace pipef
 
 class key_input_src {};
 class character_filter {
-public:
-    character_filter& operator[](const std::string&) { return *this; }
-    template <typename Func>
-    character_filter& operator|(Func&& f) { return *this; }
+ public:
+  character_filter& operator[](const std::string&) { return *this; }
+  template <typename Func>
+  character_filter& operator|(Func&& f) {
+    return *this;
+  }
 };
 class command_map {
-public:
-    command_map& operator[](const std::string&) { return *this; }
-    command_map& set(std::function<void(const std::string&)>) { return *this; }
+ public:
+  command_map& operator[](const std::string&) { return *this; }
+  command_map& set(std::function<void(const std::string&)>) { return *this; }
 };
 class print_sink {
-public:
-    void operator[](std::ostream&) {}
+ public:
+  void operator[](std::ostream&) {}
 };
 struct data_uptr {
-    std::string to_string() { return "data content"; }
+  std::string to_string() { return "data content"; }
 };
 // -----------------------------------------------------------
 
-// Constants
-constexpr int kLoopForever = -1;
+namespace {
+// Constants are grouped and placed in an anonymous namespace.
 constexpr int kStepDurationMs = 100;
 
-// Global exit flag
-std::atomic<bool> g_should_quit = false;
+// Using constexpr for command strings avoids "magic strings".
+namespace Command {
+constexpr char kHelp[] = "help";
+constexpr char kHistory[] = "history";
+constexpr char kRun[] = "run";
+constexpr char kQuit[] = "quit";
+}  // namespace Command
 
-// Command logic
+}  // namespace
+
+/// Groups command handlers for better organization.
+namespace CliCommands {
+
 void run_cli_cmd(const std::string& command) {
-    std::cout << "[Command] Executing: " << command << std::endl;
+  std::cout << "[Command] Executing: " << command << std::endl;
 }
 
-void handle_history(const std::string&) {
-    std::cout << "[Command] Showing command history." << std::endl;
+void handle_history(const std::string& /*unused*/) {
+  std::cout << "[Command] Showing command history." << std::endl;
 }
 
 std::string make_help_string(data_uptr data) {
-    return "Help: " + data.to_string();
+  return "Help: " + data->to_string();
 }
 
-int main() {
+}  // namespace CliCommands
+
+/**
+ * @class Application
+ * @brief Encapsulates the application's state and main loop.
+ *
+ * This class removes the need for global variables like 'g_should_quit'
+ * by holding the application state internally. This improves structure and
+ * makes the code more testable and easier to reason about.
+ */
+class Application {
+ public:
+  void run() {
     try {
-        auto engine = pipef::engine::create();
-
-        // Create pipeline nodes
-        auto input = engine->create<key_input_src>();
-        auto help_filter = engine->create<character_filter>();
-        auto commands = engine->create<command_map>();
-        auto output = engine->create<print_sink>();
-
-        // Build pipeline
-        input | output[std::cout];
-
-        input
-            | help_filter["help"]
-            | [](data_uptr d) { return make_help_string(std::move(d)); }
-            | output[std::cout];
-
-        input | commands["history"].set(handle_history);
-        input | commands["run"].set(run_cli_cmd);
-        input | commands["quit"].set([](const std::string&) {
-            std::cout << "[Command] Quit received.\n";
-            g_should_quit.store(true, std::memory_order_release);
-        });
-
-        std::cout << "[System] CLI initialized. Waiting for input..." << std::endl;
-
-        // Main loop with graceful shutdown check
-        while (!g_should_quit.load(std::memory_order_acquire)) {
-            engine->run(1, kStepDurationMs);
-        }
-
-        std::cout << "[System] Program terminated.\n";
-        return EXIT_SUCCESS;
-
+      setup_pipeline();
+      main_loop();
     } catch (const std::exception& e) {
-        std::cerr << "[Fatal Error] " << e.what() << std::endl;
+      std::cerr << "[Fatal Error] " << e.what() << std::endl;
+      // Consider specific cleanup if necessary
     } catch (...) {
-        std::cerr << "[Fatal Error] Unknown exception occurred." << std::endl;
+      std::cerr << "[Fatal Error] Unknown exception occurred." << std::endl;
     }
+  }
 
-    return EXIT_FAILURE;
+ private:
+  void setup_pipeline() {
+    // Create pipeline nodes using the engine.
+    auto input = engine_->create<key_input_src>();
+    auto help_filter = engine_->create<character_filter>();
+    auto commands = engine_->create<command_map>();
+    auto output = engine_->create<print_sink>();
+
+    // The pipeline defines how data flows from input to output.
+    *input | (*output)[std::cout];
+
+    *input | (*help_filter)[Command::kHelp] |
+        [](data_uptr d) { return CliCommands::make_help_string(std::move(d)); } |
+        (*output)[std::cout];
+
+    // Link commands to their respective handlers.
+    *input | (*commands)[Command::kHistory].set(CliCommands::handle_history);
+    *input | (*commands)[Command::kRun].set(CliCommands::run_cli_cmd);
+    
+    // The quit command lambda now captures 'this' to modify the member flag.
+    *input | (*commands)[Command::kQuit].set([this](const std::string&) {
+      std::cout << "[Command] Quit received.\n";
+      should_quit_.store(true, std::memory_order_release);
+    });
+
+    std::cout << "[System] CLI initialized. Waiting for input..." << std::endl;
+  }
+
+  void main_loop() {
+    // The main loop now checks the internal atomic flag.
+    while (!should_quit_.load(std::memory_order_acquire)) {
+      engine_->run(1, kStepDurationMs);
+    }
+    std::cout << "[System] Program terminated.\n";
+  }
+
+  // Application state is now encapsulated as private members.
+  std::unique_ptr<pipef::engine::engine> engine_ = pipef::engine::create();
+  std::atomic<bool> should_quit_{false};
+};
+
+int main() {
+  Application app;
+  app.run();
+  return EXIT_SUCCESS;
 }
