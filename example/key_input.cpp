@@ -136,7 +136,6 @@ class Application {
     std::cout << "[System] Program terminated.\n";
   }
 
-  // Application state is now encapsulated as private members.
   std::unique_ptr<pipef::engine::engine> engine_ = pipef::engine::create();
   std::atomic<bool> should_quit_{false};
 };
