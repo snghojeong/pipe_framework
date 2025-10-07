@@ -16,9 +16,9 @@ extern "C" {
 }
 
 // --- Constants ---
-constexpr int WIDTH = 1920;
-constexpr int HEIGHT = 1080;
-constexpr int FPS = 60;
+constexpr int WIDTH = 1280;
+constexpr int HEIGHT = 720;
+constexpr int FPS = 30;
 constexpr AVPixelFormat PIX_FMT = AV_PIX_FMT_YUV420P;
 
 // =================================================================================================
