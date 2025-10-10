@@ -10,9 +10,6 @@
 
 #include "pipef.h" // Presumed custom pipeline library
 
-// Use a namespace to organize server-specific functions and avoid polluting the global scope.
-namespace http_server {
-
 // Use string_view for read-only string parameters to avoid unnecessary copies.
 std::string read_file_content(std::string_view file_path) {
     std::ifstream file(file_path.data());
