@@ -31,13 +31,11 @@ constexpr AVPixelFormat PIX_FMT = AV_PIX_FMT_YUV420P;
 // --- Custom Deleters for FFmpeg types ---
 struct AVFormatContextDeleter {
     void operator()(AVFormatContext* ctx) const {
-        if (ctx) {
-            // Close the output file if it was opened
-            if (!(ctx->oformat->flags & AVFMT_NOFILE) && ctx->pb) {
-                avio_closep(&ctx->pb);
-            }
-            avformat_free_context(ctx);
+        assert(ctx);
+        if (!(ctx->oformat->flags & AVFMT_NOFILE) && ctx->pb) {
+           avio_closep(&ctx->pb);
         }
+        avformat_free_context(ctx);
     }
 };
 
