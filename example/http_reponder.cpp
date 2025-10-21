@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <boost/asio.hpp>
 
-#include "pipef.h" // Presumed custom pipeline library
+#include <pipef.h>
 
 // Use string_view for read-only string parameters to avoid unnecessary copies.
 std::string read_file_content(std::string_view file_path) {
