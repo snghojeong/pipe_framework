@@ -25,6 +25,10 @@ std::string read_file_content(std::string_view file_path) {
     return buffer.str();
 }
 
+std::string return_echo(std::string input) {
+    return input;
+}
+
 // Renamed for clarity. This function only logs the request, it doesn't "handle" it.
 // Use [[maybe_unused]] to signal that the parameter is intentionally not used.
 std::string log_request([[maybe_unused]] const std::string& request) {
