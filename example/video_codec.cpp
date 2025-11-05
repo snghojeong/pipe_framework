@@ -22,7 +22,7 @@ constexpr int FPS = 30;
 constexpr AVPixelFormat PIX_FMT = AV_PIX_FMT_YUV420P;
 
 // =================================================================================================
-// ## 1. Utilities (RAII Wrappers & Error Handling)
+// ## Utilities (RAII Wrappers & Error Handling)
 //
 // We define smart pointers for FFmpeg types and a single error-checking function.
 // This ensures resources are managed automatically and errors are handled consistently.
@@ -55,7 +55,7 @@ inline void check_ffmpeg(int ret, const std::string& msg) {
 }
 
 // =================================================================================================
-// ## 2. YUV File Reader
+// ## YUV File Reader
 //
 // This class remains largely the same. It's a simple utility to read raw YUV frames from a file.
 // NOTE: This implementation assumes the input .yuv file has a packed, non-padded format that
@@ -108,7 +108,7 @@ private:
 };
 
 // =================================================================================================
-// ## 3. Video Encoder Class
+// ## Video Encoder Class
 //
 // This new class encapsulates all FFmpeg-related state and operations.
 // The constructor handles all initialization, and the destructor handles cleanup via RAII.
@@ -196,7 +196,7 @@ private:
 };
 
 // =================================================================================================
-// ## 4. Main Function
+// ## Main Function
 //
 // The main function is now simple and clean. It clearly expresses the program's purpose:
 // 1. Create a reader and an encoder.
