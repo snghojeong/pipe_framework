@@ -50,8 +50,6 @@ std::string generate_response(std::string_view html_content) {
     return response.str();
 }
 
-} // namespace http_server
-
 int main() {
     // Use constexpr for true compile-time constants.
     constexpr unsigned short port = 8000;
