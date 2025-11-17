@@ -58,7 +58,7 @@ int main() {
     // Define engine run parameters as constants for clarity.
     // -1 is often used to signify "run forever" in such libraries.
     constexpr int run_forever = -1; 
-    constexpr int poll_interval_ms = 100;
+    constexpr int poll_interval_ms = 10;
 
     try {
         const std::string html_content = http_server::read_file_content(html_file_path);
