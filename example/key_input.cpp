@@ -44,7 +44,6 @@ class print_sink {
 struct data_uptr {
   std::string to_string() { return "data content"; }
 };
-// -----------------------------------------------------------
 
 namespace {
 // Constants are grouped and placed in an anonymous namespace.
