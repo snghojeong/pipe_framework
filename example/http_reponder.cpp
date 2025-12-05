@@ -10,7 +10,6 @@
 
 #include <pipef.h>
 
-// Use string_view for read-only string parameters to avoid unnecessary copies.
 std::string read_file_content(std::string_view file_path) {
     std::ifstream file(file_path.data());
     if (!file) {
