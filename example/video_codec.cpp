@@ -89,8 +89,6 @@ public:
         );
 
 
-        // Manually set plane pointers for the contiguous buffer
-        // This is correct for the packed YUV420p format.
         const int y_size = WIDTH * HEIGHT;
         const int uv_size = WIDTH * HEIGHT / 4;
         frame->data[1] = frame->data[0] + y_size;
