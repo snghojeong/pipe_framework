@@ -7,6 +7,7 @@
 
 namespace pipef {
 namespace engine {
+using engine_uptr = std::unique_ptr<engine>;
 class engine {
  public:
   static std::unique_ptr<engine> create() { return std::make_unique<engine>(); }
