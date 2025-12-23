@@ -79,7 +79,6 @@ int main() {
             
         auto sink      = engine->create<tcp_output_sink>();
 
-        // Assemble the pipeline
         *source | *logger | *responder | *sink;
 
         std::clog << "[INFO] HTTP server running on port " << port << "\n";
