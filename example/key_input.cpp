@@ -47,7 +47,6 @@ struct data_uptr {
 };
 
 namespace {
-// Constants are grouped and placed in an anonymous namespace.
 constexpr int kStepDurationMs = 100;
 
 // Using constexpr for command strings avoids "magic strings".
