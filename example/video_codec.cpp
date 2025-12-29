@@ -171,7 +171,6 @@ public:
     void finalize() {
         // Flush the encoder by sending a null frame
         encodeFrame(nullptr);
-        // Write the stream trailer
         check_ffmpeg(av_write_trailer(format_ctx_.get()), "Failed to write trailer");
         std::cout << "Encoding completed successfully." << std::endl;
     }
