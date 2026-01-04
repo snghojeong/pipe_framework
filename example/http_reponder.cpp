@@ -28,8 +28,6 @@ std::string return_echo(std::string input) {
     return input;
 }
 
-// Renamed for clarity. This function only logs the request, it doesn't "handle" it.
-// Use [[maybe_unused]] to signal that the parameter is intentionally not used.
 std::string log_request([[maybe_unused]] const std::string& request) {
     // std::clog is more appropriate for logging than std::cout.
     std::clog << "[INFO] Received new HTTP request.\n";
