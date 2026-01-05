@@ -18,7 +18,6 @@ class engine {
   }
 
   void run(int loop_count, int duration_ms) {
-    // Simulates engine work for the given duration.
   }
 };
 }  // namespace engine
