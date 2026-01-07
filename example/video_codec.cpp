@@ -24,7 +24,6 @@ constexpr AVPixelFormat PIX_FMT = AV_PIX_FMT_YUV420P;
 // This ensures resources are managed automatically and errors are handled consistently.
 // =================================================================================================
 
-// --- Custom Deleters for FFmpeg types ---
 struct AVFormatContextDeleter {
     void operator()(AVFormatContext* ctx) const {
         assert(ctx);
