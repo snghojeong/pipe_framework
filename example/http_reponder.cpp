@@ -29,7 +29,6 @@ std::string return_echo(std::string input) {
 }
 
 std::string log_request([[maybe_unused]] const std::string& request) {
-    // std::clog is more appropriate for logging than std::cout.
     std::clog << "[INFO] Received new HTTP request.\n";
     // For brevity, we don't log the full request here, but you could add it back:
     // std::clog << request << "\n";
