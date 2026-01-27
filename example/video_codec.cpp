@@ -49,13 +49,11 @@ inline void check_ffmpeg(int ret, const std::string& msg) {
     }
 }
 
-// =================================================================================================
 // ## YUV File Reader
 //
 // This class remains largely the same. It's a simple utility to read raw YUV frames from a file.
 // NOTE: This implementation assumes the input .yuv file has a packed, non-padded format that
 // matches the memory layout allocated by av_frame_get_buffer.
-// =================================================================================================
 class YUVReader {
 public:
     explicit YUVReader(const std::string& filename)
