@@ -20,8 +20,8 @@ class engine {
   void run(int loop_count, int duration_ms) {
   }
 };
-}  // namespace engine
-}  // namespace pipef
+}  // end of namespace engine
+}  // end of namespace pipef
 
 class key_input_src {};
 class character_filter {
